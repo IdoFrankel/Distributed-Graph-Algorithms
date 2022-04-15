@@ -1,0 +1,317 @@
+\documentclass[11pt]{article}
+
+\newcommand{\numpy}{{\tt numpy}}    % tt font for numpy
+
+\topmargin -.5in
+\textheight 9in
+\oddsidemargin -.25in
+\evensidemargin -.25in
+\textwidth 7in
+\renewcommand{\baselinestretch}{1.25} 
+
+% psudo-code text
+\usepackage{algpseudocode}
+\usepackage{aligned-overset}
+
+% Graph illustration
+\usepackage{tikz}
+\usetikzlibrary{automata}
+
+
+\begin{document}
+
+% ========== Edit your name here
+\author{Ido Frankel - 318985108}
+\title{Distributed Graph Algorithms HW1}
+\maketitle
+
+\medskip
+
+% ========== Begin answering questions here
+\section{Exercise 1}
+Let $G=(V,E)$ be a circle graph with $|V|=D$ nodes, with weights \{ 1,…, $poly(D)$ \}. we will use the indistinguishability argument: Denote $e=(v,v_k)$ the edge with the highest weight in $G$ and $u$ the node with distance $D$ from v (such node exists, since G is a circle graph with diameter $D$). Let $G'=(V',E')$ be a circle graph identical to G, except splitting $u$ 3 times. (e.g $V'=\{V-\{u\}\}\cup{\{u_1,u_2,u_3\}}$ and be $\{(u,t), (u,s)\}$ the edges touching $u$ in $G$,
+then $E'=(E-($\{(u,t), (u,s)\}$)) \cup{\{(u_3,t), (u_1,u_2), (u_1,s)\}}$.The distance of $u_2$ from $v$ is $D+1$. since each edge in $G$ and $G'$ closes a circle, in order for each node to know which one of its edges are part of the MST, it must know what is the maximal weight in the circle (e.g. graph). since $u\in V_G$ and $u_2\in V_G'$ are at distance $D$ and, $D+1$ respectively. According to the local claim, after exactly $D$ rounds, v cannot distinguish between $G,G'$ since all the weights it witnessed were identical. meaning, it must output the same result, but for cases in which $w(u_2,u_3)>w(e)$, the output for one of the graphs must be incorrect.
+\newline
+ After $D$ round, $v$ learns all weights in $G$, but do not learn $w(u_2,u_3)$ in $G'$.
+\begin{itemize}
+    \item if v pick $e$ as a MST edge in $G$, than the output is incorrect, since $e$ is the heaviest edge in the circle.
+    \item if v does not pick $e$ in $G$, then $v$ does not pick $e$ in $G'$ as well (As after $D$ rounds, $v$ learns the same information in both graphs). $u_2$ must pick $(u_2,u_3)$ (otherwise the result is not a tree, since it does not connect all the nodes in the graph). but $w(u_2,u_3) > w(e)$, hence the output in $G'$ is not minimal.
+\end{itemize}
+
+\section{Exercise 2}
+
+\subsection{Algorithm 1}
+
+\begin{algorithmic}[1]
+
+\State construct a BFS* tree from $v$
+\If{$u == v$}
+    \State{Set global starting time $T_0$}
+    \For{$i = T_0 + 1$; $i \le T_0 + K$; $i{+}{+}$}
+    \State Send message No. $i$ to all children in the BFS tree
+    \EndFor
+\Else
+    \If{message $i$ was received}
+        \State send the message to all children in the BFS tree
+    \EndIf
+\EndIf
+\end{algorithmic}
+
+\subsubsection*{Note about the BFS tree}
+I use the BFS algorithm shown in class as a black box, with one minor change. after each node update within itself its parent node, it also sends an ACK message to the parent, notifying that the edge is indeed part of the BFS tree. (I asked if it is allowed in a reception hour)
+
+\subsection*{Correctness}
+
+\subsubsection{Claim 1 - At each round, a node can receive at most one new unseen message}
+Lets assume that at iteration $i_1$ the node, denoted as, $u$ receives 2 different message types for the first time. denote $P_1: v\rightarrow - \cdots - \rightarrow v$ and $P_1: v\rightarrow - \cdots - \rightarrow v$ the path which each message has travelled through. since both of the messages have been received at the same round, and since w.l.o.g the second message has been sent $t$ rounds after the first message, then the length of the second path is shorter by $t$ edges. But, since both of the message were only pass on the BFS tree edges, it means that $P_1$ and $P_2$ are the shortest path from $v$ to $u$ which result with $|P_1| = |P_2|$. contradiction.
+
+\subsubsection{Claim 2 - after $j+m-1$ rounds, each node at distance $j$ from $v$ received $m$ messages}
+Proof double induction.
+
+\textbf{Base}: for $j=1$ and for each $m \in {1,\cdots,K}$ after $m$ rounds, all nodes at distance $1$ have received $m$ messages according to the algorithm.
+
+\textbf{Induction hypothesis}: $\forall m\in{1,\cdots,k}$ after $(j-1)+m-1 $ rounds, all nodes at distance $j-1$ have received $m$ messages. 
+
+\textbf{Induction step}: By induction hypothesis, all nodes at distance $j-1$ have received $m$ messages. because each node send in the next round the message it received at the current round, it means that after $j - 1 + m - 1$ rounds, all nodes at distance $j$ have received $m-1$ messages. as such, in the next iteration (e.g $j +m -1$), all nodes with distance $j$ from $v$ received $m$ messages.
+
+\subsubsection{Claim 3}
+From claim 1, we conclude that it is impossible for a node to receive 2 unseen messages at the same round, meaning each new message has been sent one round after it first arrived. (meaning, new messages do not wait at any node, which may delay the flow of the pipelining)
+From claim 2, we can conclude that after $D+K$ rounds all nodes received $K$ messages. 
+
+\subsection*{Complexity}
+The construction of the BFS tree, as taught in class is O(D). It takes $D$ rounds for each message that $v$ sends to reach the furthest node in the BFS tree (since the Diameter is D). because the messages are consecutively being sent one after the other, the last message reaches the farthest node after $D+K$ rounds. As such, the total complexity is $O(D+K)$
+
+
+
+\subsection{Algorithm 2}
+Variables for node v:
+\begin{itemize}
+    \item queue of messages, initially contains the $m_v$ messages of the node.
+    \item parent, initially v
+    \item number of messages in the BFS subtree, initially $0$
+    \item broadcasting, initially False
+\end{itemize}
+
+\begin{algorithmic}[1]
+\State{construct a BFS* tree $T$ from $v_0$}
+\State{all nodes calculate how many messages exists in their subtree (including node itself) (The calculation begins in leafs, until reaches the root $v_0$}
+
+\For{$T = 0$; $T \le D$; $T{+}{+}$}
+    // in round T
+    \If {node $u$ receives an update from child}
+    \State{$u$ update how many messages in subgraph}
+    \EndIf
+    \State{All node at depth $T$ from $v_0$ sends how many messages they have in their subgraph}
+\EndFor
+
+\If{$u \ne v_0$}
+
+    \If{new message $m'$ was received from parent}
+    \State send $m'$ to all children in the BFS subtree.
+    \Else
+    
+    \If{new messages $m'$ were received from children}
+    \State{$u.enqueue(m')$}
+    \EndIf
+
+    \While{$u.queue()$ is not empty}
+    \State{$m \leftarrow $ queue.dequeue()}
+    \State{sends $m$ to parent}
+    \EndWhile
+    \EndIf
+\Else
+    \If{$v_0.queue.size() =$ total messages in graph}
+    \State{$brodacsting \leftarrow True$}
+    \EndIf
+    \While{$brodacsting == True$ and $u.queue()$ is not empty }
+    \State{$m \leftarrow u.dequeue()$}
+    \State{send $m$ to all children nodes}
+    \EndWhile
+\EndIf
+\end{algorithmic}
+
+
+\subsubsection*{Few Notes about the Algorithm}
+As described before, the BFS tree has the following minor changes:
+\begin{itemize}
+    \item each node knows which of its edges is part of the BFS tree
+    \item each node knows how many messages it has in the subtree (each leaf can send to its parent, the number of messages, then the node sums all the values (including its own), and sends it to its parent
+    \item When using a while loop, only one message is being sent on each edge in a single round. (I tried to stick to how the algorithm in the lectures are looks like)
+\end{itemize}
+
+\subsection*{Correctness}
+
+\subsubsection{Claim 1 - after D iteration, the roots knows how many messages there are in the graph}
+proof by induction: 
+
+\textbf{Base}: for $T=0$ each node at distance $D-T=D$ knows how many messages it has.
+
+\textbf{Induction hypothesis}: All nodes at depth T+1 or greater, knows how many messages in the subtree.
+
+\textbf{Induction step}: By induction hypothesis, All nodes at depth T+1, knows how many messages are there in the subtree. At round T, all nodes at depth T+1 sends that number to their parent. As a result, all nodes at depth T can calculate how many messages are there in the subtree.
+
+\subsubsection{Claim 2 - each node contains all the messages in the graph}
+The correctness of this claim is based on the correctness of previous algorithm. Because the root waits until it receives all the messages, then according to the previous algorithm (which this algorithm implements). All nodes in the graph will receive all the messages.
+
+\subsection*{Complexity}
+\begin{itemize}
+    \item The construction of the BFS tree, as taught in class, is $O(D)$.
+    \item It takes $O(D)$ rounds until the root can calculate how many messages are there in the graph.
+    \item It may take up to $O(D + K)$ rounds until the last message may arrive to the root.
+    \item The broadcast of K message from the root to all nodes, takes $O(D+K)$ according to previous section.
+\end{itemize}
+Conclusion: $O(D+K)$
+
+\subsection{Algorithm 3}
+
+Variables for node v:
+\begin{itemize}
+    \item each node contains a message with the following properties ${vertix_1, vertix_2, weight}$
+\end{itemize}
+\begin{algorithmic}[1]
+\State{initialize each vertex with messages which represent the edges it touches, as described above}
+\State{Call algorithm 2 from previous section}
+\end{algorithmic}
+
+\subsection*{Correctness}
+\subsubsection{Claim 1 - each node contains the topology of its first neighbourhood}
+The topology of the graph is a set of all edges in the graph with their corresponding weights. since each vertex contains a single message for each edge it touches, it contains the topology of its first neighbourhood.
+
+\subsubsection{Claim 2 - All vertices learn the topology of the graph }
+Based on Claim 1 and the correctness of algorithm 2
+
+
+\subsection*{Complexity}
+\begin{itemize}
+    \item It takes $O(D)$ rounds to choose the leader (e.g $v_0$). (each node sends the minimal Id it has discovered, as seen in class).
+    \item The size of each message is $O(\log{n})$ because the ID's of the two vertices are encoded with $log(n)$ bits, and since the weight is polynomial in the number of vertices in the graph, its encoding is polynomial of $log(n)$. Hence, The total message size is polynomial of $log(n)$. meaning that each message's length satisfies the the congest setting.
+    
+    \item The total number of messages, is twice the number of edges: $O(m)$
+    \item It takes $O(D+K)=O(D+m)$ rounds to broadcast the entire topology of the graph to all nodes.
+    \item The dimeter of the graph is upper bounded by m (the length of the longest shortest path from $v_0$, is restricted by the number of edges in the graph)
+\end{itemize}
+Conclusion: $O(m)$
+
+
+
+\section*{Exercise 3}
+\begin{enumerate}
+    \item 
+    Let $P: v_0 - \cdots - v_D$ be the shortest, longest path between 2 vertices in G, with diameter $D$.
+    \begin{itemize}
+        \item \underline{Claim 1 - There isn't an edge between any two non-consecutive node in $P$}:
+        \newline
+        Assume by contradiction that two, non-consecutive nodes in the path, denoted $v_k, v_l$ have an edge between them, then there exists a shorter path $P': v_0 - \cdots - v_k - v_l -\cdots - v_D$ in G. contradiction that the diameter is D. 
+        \item \underline{NOTE}: Since each node in the path has a degree of $k$, and according to claim 1, it does not have any edge to other nodes in $P$. Then each node in the path has at least $k-2$ neighbours which are not part of the path.
+        
+        \item \underline{Claim 2 - ${ \forall u \notin P}$, $u$ can be a neighbour to at most 3 vertices in $P$}:
+        Assume by contradiction, $ u $ has ${s_0, s_1, s_2, s_3 \in P}$ as neighbours. w.l.o.g  ${ \forall i < j}$ ${s_i}$ appears before $ s_j $ in P. than a shorter path $ v_0 - \cdots - s_0 - v - s_3 - \cdots - v_d$ exists. contradiction, that $P$ is the shortest path.
+        
+        \item\underline{\textbf{Claim 3 - $D =O(\frac{n}{k})$}}
+        There are $D$ vertices in $P$, each having $K-2$ (note, $v_0, v_D$ has $K-1$) neighbours which are not part of $P$ (according to claim 1). By claim 2, at most 3 vertices in $P$ can share a neighbour not in $P$. meaning that $n = \Omega(D + D*\frac{K-2}{3}) \rightarrow  n = \Omega (D*K)$. meaning $D*K = O(n) \rightarrow D = O(\frac{n}{k})$
+        
+    %   \newline *** DELETE CLAIM 2 TO 5 below----------------------------
+
+    %     \item Claim 2 – two non-consecutive nodes $v_k,v+l$ in $P$ s.t $d(v_k,v_l) > 2$ don't share a common neighbours
+    %     \newline
+    %     Assume, by contradiction, that $v_k, v_l$ do share a common neighbours $u$, than $d(v_k,v_l) =1 $ which yields an existence of a shorter path $P': v_0 - \cdots - v_k - u - v_l - \cdots - v_D$. contradiction.
+
+    %     \item Claim 3 - three consecutive nodes (packed as a set) in $P$ have at least $k-2$ unique neighbours vertices in G
+    %     \newline
+    %     Since a neighbour as described does not lower the length of the path between any 2 nodes in the set, they can share their neighbours. According to the note, there are at least $k-2$ vertices in the neighbourhood of the given set
+        
+    %      \item \underline{Claim 4 - four consecutive nodes in $P$ do not share vertices in G}
+    %      \newline
+    %      since there are two vertices with length more than 2, then they do not share a common neighbour by claim 2.
+         
+    %     \item\underline{\textbf{Claim 5 - $D =O(\frac{n}{k})$}}
+    %     Since each quadratic disjoint set of consecutive vertices do not share a common neighbour, and each triple disjoint set of consecutive vertices have at least $k-2$ unique vertices, in their neighbourhood, then each quadratic set as described have a $O(k)$ unique vertices, which it does not share with other disjoint sets. Because there are $O(\frac{D}{4})$ quadratic disjoint sets, then there are at least $O(k*\frac{D}{4})$ vertices in the graph.
+    %     \newline meaning $n = \Omega(k*D) \rightarrow D = O(\frac{n}{k})$
+        
+    %     *** DELETE CLAIM 2 TO 5
+    %   -------------------
+    %   \newline
+        
+        
+    \end{itemize}
+    
+    \item 
+    ${\forall i \in [1,N]}$ denote ${H_i}$ $\overset{\triangle}{=}$ $\{(u,v) \mid u \in G[P_i] \land  v \notin G[P_i] \}$
+    \begin{itemize}
+        \item \underline{$\forall e\in E$, $e$ appears at most 2 of the sub-graph $G[P_i]\cup H_i$}:
+        \newline
+        Let divide into cases:
+        \begin{itemize}
+            \item \underline{${e\in G[P_i]}$}:
+            denote $e=(u,v)$. Follow the construction $\forall j\in[1,N]: e \notin H_j$, in addition, because $G[P_k]$ are node-disjoint sets, then $ \forall k \neq i$ $u,v \notin G[P_k]$. meaning that $e$ appears in a single $G[P_k] \cup H_k$
+            
+            \item \underline{$e \notin G[P_i] \quad \forall i\in[1,N]$}: $e=(u,v)$ is a crossing edge from $G[P_i]$ to $G[p_j]$. Meaning $ u \in G[P_i] \land v \in G[P_j] $. According to the constriction of H, it holds ${e \in  H_i \land e \in H_j }$ and $e \notin H_k$ for $k \neq i,j$.
+        \end{itemize}
+        We proved that each edge appears at most twice of the sub-graph $G[P_i]\cup H_i$.
+        
+        \item \underline{${\forall i \in [1,N]}$ the graph $G[P_i]\cup H_i$ has diameter at most d}:
+        \newline
+        $ \forall v \in G[P_i] $ it holds $G[P_i]\cup H_i$ includes all the edges touching $v$. Meaning $deg(v) \ge k$. (And since $|G[P_i]| \le n$) According to previous section, it holds that $D = O(\frac{n}{k})$
+    \end{itemize}
+    We have proven such shortcut exists.
+    
+\item (The following algorithm is being preformed in each $G[P_i] \cup H_i $)
+    
+\begin{algorithmic}[1]
+
+\State{construct a BFS* tree $ T $ from $ v_0^i \in G[P_i] \cup H_i $ }
+
+\For{vertex $u \in  G[P_i] \cup H_i $}
+    \State{$m \leftarrow \#$ number of touching edges which are fully in $G[P_i]$}
+    \State{send $m$ to parent in the BFS tree}
+    \If{message $m'$ was received from children}
+        \State{send $m'$ to parent}
+    \EndIf
+    \If{ $u$ received messages from all children}
+        \State {$u.done \leftarrow True$}
+    \EndIf
+    
+    \If{$u == v_0^i$ (i.e. root) and $u.done == True$}
+        \State{$u.total = \frac{\sum{m'}}{2}$}
+        \State{send $u.total$ to all vertex in BFS tree.}
+    \Else{ (i.e not root)}
+        \If{ $u.done == True$ and received $total$ from parent}
+            \State{send $total$ to children}
+            \If {$u \in G[P_i]$}
+                \State{$u.total = total$}
+            \EndIf
+        \EndIf
+    \EndIf
+\EndFor
+\end{algorithmic}
+    
+\subsection*{Correctness}
+\subsubsection*{Claim 1 - The total number of edges the roots receives is twice the number of edges in $G[P_i]$}
+each edges $(u,s)$ which touches $u$ can be either:
+\begin{itemize}
+    \item $s \in G[P_i]$: then both $u,s$ will account the edge as part of their count.
+    \item $s \notin G[P_i]$: then $u$ won't account the edge as part of the count.
+\end{itemize}
+meaning, that each edge $e=(u,s)$ which is fully in $G[P_I]$ will be counted in both $u,s$.
+Hence, the total number of edges in $G[P_i]$ is half the total number it receives.
+
+\subsubsection*{Claim 2 - each vertex knows the total number of edges in $G[P_i]$}
+According to claim 1 the root calculates the true number of edges which are fully in $G[P_i]$.
+Then, the root sends the total number to all vertices in the BFS tree (As we saw in lectures and previous exercise). since there is the possibility of having vertices which are not part of $G[P_i]$ (because $H_i$) in the BFS, the algorithm verify if the vertex is part of $G[P_i]$ before updating the $total$ field in the vertex.
+
+
+
+\subsection*{Complexity}
+\begin{itemize}
+    \item It takes $O(D)$ rounds to choose the leader (e.g $v_0$). (each node sends the minimal Id it has discovered, as seen in class).
+    \item it takes $O(1)$ rounds for each vertex to know which of its touching edges is fully part of $G[P_i]$ (since each vertex knows, to which $ G[P_k] $ it belongs).
+    \item It takes $O(D)$ rounds for both the furthest vertex to send the single message to the root, and the root to send the total number back to each vertex.
+    \item The diameter of each $G[P_I] \cup H_i$ is bounded by $O(\frac{n}{k})$
+\end{itemize}
+Hence the total complexity is $O(\frac{n}{k})$
+
+\end{enumerate}
+
+\end{document}
+
+
