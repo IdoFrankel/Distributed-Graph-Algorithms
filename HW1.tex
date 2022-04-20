@@ -230,7 +230,7 @@ Conclusion: $O(m)$
         \newline
         
         \begin{itemize}
-            \item Claim 4 - Let $l_i$ be the diameter of the longest, shortest path in $G[P_i] \cup H_i$ with diameter $D$. Then at least $\lfloor \frac{D}{2} \rfloor$ vertices of $l_i$ are in $G[P_i]$:
+            \item Claim 4 - Let $l_i$ be the longest, shortest path in $G[P_i] \cup H_i$ with diameter $D$. Then at least $\lfloor \frac{D}{2} \rfloor$ vertices of $l_i$ are in $G[P_i]$:
             
             Assume by contradiction there are two consecutive vertices in $l_i$ that are not belongs to $G[P_i]$, then the edge between them (denote $e$) holds $e \in G[P_i] \cup H_i$. By definition $e \notin G[P_i]$, hence $e \in H_i$. but the touching vertices of $e$ do not belong to $G[P_i]$, we received a contradiction to the definition of $H_i$.
         \end{itemize}
@@ -271,7 +271,11 @@ Conclusion: $O(m)$
     \EndIf
 \EndFor
 \end{algorithmic}
-    
+
+\subsection*{NOTE about BFS construction}
+each component can build its own BFS tree in O(D) rounds.
+The construction of all the BFS trees can be done simultaneously, since each edge belongs to at most 2 components (according to the definition in the exercise), meaning at most 2 vertices can send information on a single edge per round, hence the CONGEST model conditions are maintained.
+
 \subsection*{Correctness}
 \subsubsection*{Claim 1 - The total number of edges the roots receives is twice the number of edges in $G[P_i]$}
 each edges $(u,s)$ which touches $u$ can be either:
@@ -285,7 +289,6 @@ Hence, the total number of edges in $G[P_i]$ is half the total number it receive
 \subsubsection*{Claim 2 - each vertex knows the total number of edges in $G[P_i]$}
 According to claim 1 the root calculates the true number of edges which are fully in $G[P_i]$.
 Then, the root sends the total number to all vertices in the BFS tree (As we saw in lectures and previous exercise). since there is the possibility of having vertices which are not part of $G[P_i]$ (because $H_i$) in the BFS, the algorithm verify if the vertex is part of $G[P_i]$ before updating the $total$ field in the vertex.
-
 
 
 \subsection*{Complexity}
