@@ -13,6 +13,8 @@
 \usepackage{algpseudocode}
 \usepackage{aligned-overset}
 
+\usepackage{setspace}
+
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{corollary}{Corollary}[theorem]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -37,7 +39,7 @@ For each component $P_i$:
 \If{count $ < \sqrt{n}$}
     \State set $H_i \leftarrow \emptyset$
 \Else
-    \State set $H_i \leftarrow E \backslash E_G$
+    \State set $H_i \leftarrow E \backslash E_{P_{i}}$
 \EndIf
 \end{algorithmic}
 
@@ -57,7 +59,7 @@ Let us assume by contradiction that there are at least $\sqrt{n}$ with more than
 \label{parts_dimater_D}
 each part with {\Large V}$(G[P_i]) > \sqrt{n}$ vertices holds that the diameter of $G[P_i] \cup H_i$ is $D$
 \end{lemma}
-According to the algorithm, if the part has more than $\sqrt{n}$ vertices, $G[P_i] \cup H_i = G$, because each edge that is not part of $H_i$, is part of $G_i$. Therefore, the diameter of $G[P_i] \cup H_i$ is $D$.
+According to the algorithm, if the part has more than $\sqrt{n}$ vertices, $G[P_i] \cup H_i = G$, because each edge that is not part of $H_i$, is part of $G_{P_{i}}$ according to the algorithm. Therefore, the diameter of $G[P_i] \cup H_i$ is $D$.
 
 \begin{lemma}
 \label{parts_dimater_sqrt_n}
@@ -102,7 +104,7 @@ Total: $O(D)$
     \State compute maximal matching on outgoing edges that belongs to $H$
     \State Merge components adjacent to the edges of the matching
     \State Merge neighboring unmatched components that do not have adjacent edge in the matching
-    \State in each merge of components $C_1, C_2$, the vertices adjacent to the selected edge (which caused the merge), learns the minimal ID of the components, and then sends it to all vertices in $C_1, C_2$
+    \State in each merge of components $C_1, C_2$, the vertices adjacent to the selected edge (which caused the merge), learns the minimal ID of the components and then sends it to all vertices in $C_1, C_2$
     \EndWhile
 \end{algorithmic}
 
@@ -110,7 +112,7 @@ Total: $O(D)$
 \begin{lemma}
 After O(1) rounds, all vertices of $C$ learn the outgoing edge from $C$ 
 \end{lemma}
-Every vertex sends one message to each neighbor, which in turn locally computes one edge (that is, an edge =$(u,v)$ with decreasing id of $u,v$) from the input it receives and then sends one message to all its neighbors in $C$ with that edge.
+Each vertex sends one message to each neighbor, which in turn locally computes one edge (that is, an edge =$(u,v)$ with decreasing id of $u,v$) from the input it receives and then sends one message to all its neighbors in $C$ with that edge.
 Because the diameter of the network graph is 2, then in $O(1)$ rounds, each vertex in $C$ knows which outgoing edge was picked.
 
 \begin{lemma}
@@ -127,7 +129,7 @@ Similarly to the calculation of the outgoing edge, the vertex sends all its neig
 \begin{lemma}
 After the merge it takes $O(1)$ rounds for all the vertices in the merged component to learn the new ID.
 \end{lemma}
-According to Lemma \ref{message_transfer_2_rounds}, the adjacent vertices of the merged-edge can send the new chosen ID in 2 rounds.
+According to the lemma \ref{message_transfer_2_rounds}, the adjacent vertices of the merged edge can send the new chosen ID in 2 rounds.
 
 \begin{lemma}
 The Algorithm computes the connected components of $G_H$
@@ -146,7 +148,7 @@ The algorithm takes $O(\log{n} \cdot \log^{*}{n})$ rounds.
 \section{Exercise 3}
 
 \subsection{}
-Assume by contradiction that there exists an induce graph $G[V_i]$ which has a vertex with degree greater than $t$. According to the definition of the induced graph, it means $v$ have more than $t$ vertices with same color as $v$ in $G[V_i]$. Meaning $\phi$ is not a valid $t$-defective $k$-coloring function.
+Assume by contradiction that there exists an induce graph $G[V_i]$ that has a vertex of degree greater than $t$. According to the definition of the induced graph, it means $v$ have more than $t$ vertices with same color as $v$ in $G[V_i]$. Meaning $\phi$ is not a valid $t$-defective $k$-coloring function.
 
 \subsection{}
 
@@ -156,43 +158,109 @@ Assume by contradiction that there exists an induce graph $G[V_i]$ which has a v
 \label{psi_p2_coloring}
 $\psi$ is $p^2$ coloring function.
 \end{lemma}
-$\psi$ consists as a concatenation of $\psi_1, \psi_2$, each $p-$coloring function. meaning, the output of $\psi(u)$ is a color, which can decoded in $\log{p}$ bits. Hence, $\psi$ outputs a color that can be decoded by $2*\log{p}=\log{p^2}$ bits. There are $2^{\log{p^2}}=p^2$ options. Hence, $\psi$ is $p^2$ coloring function. 
+$\psi$ consists as a concatenation of $\psi_1, \psi_2$, each $p-$coloring function. meaning, the output of $\psi(u)$ is a color, which can decoded in $\log{p}$ bits. Therefore, $\psi$ outputs a color that can be decoded by $2*\log{p}=\log{p^2}$ bits. There are $2^{\log{p^2}}=p^2$ options. Therefore, $\psi$ is the $p^2$ coloring function. 
 
+
+% \begin{lemma}
+% \label{psi_1_2_delta_defective}
+
+% % DELETE THIS 
+% % $\forall v$, $v$ has at most $\frac{|S(v)|}{p}$ and $\frac{|G(v)|}{p}$ neighbors with same $\psi_1, \psi_2$ color as itself respectively. 
+
+% $\forall v$, $v$ has at most $\frac{\Delta}{p}$ neighbors with same $\psi_1$ or $\psi_2$ color as itself respectively. 
+% \end{lemma}
+% proof for $\psi_1$, the proof of $\psi_2$ is identical. \\
+% Be $v$ a vertex with degree $\Delta_v$. 
+
+% Because each vertex chooses $\psi_1$ to be the color used the least by its neighbors, there are at most $\frac{|S(v)|}{p}$ neighbors (which belongs to $S(v)$) with the same $\psi_1$ color as $v$ according to the pigeon hole principle and due to the fact that we choose the color that is used least by the neighbors. In addition according to the algorithm, all other neighbors $u \in G(v)$, chooses their $\psi_1$ only after $v$ chooses its (according to the algorithm). In the worst case, all $G(v)$ will choose their $\psi_1(u)$ to be the same color as $\psi_1(v)$. Meaning $v$ shares its $\psi_1$ coloring with at most $\frac{|S(v)| + |G(v)|}{p} < \frac{\Delta_v}{p}$ neighbours which belongs to 
+% $S(V) \cup G(v)$,
+
+
+% (and it is upper bound by $\frac{\Delta}{p}$ where $\Delta$ is the maximal degree in the graph).
+
+
+% proof for $\psi_1$, the proof of $\psi_2$ is identical. \\
+% Be $v$ a vertex with degree $\Delta_v$. Because each vertex chooses $\psi_1$ to be the color used the least by its neighbors, there are at most $\frac{\Delta_v}{p}$ neighbors with the same $\psi_1$ color as $v$ according to the pigeon hole principle and due to the fact that we choose the color that is used least by the neighbors (and it is upper bound by $\frac{\Delta}{p}$ where $\Delta$ is the maximal degree in the graph).
+
+% \begin{lemma}
+% \label{psi_1_2_t_defective}
+% $\forall u$, neighbor of $v$ with the same color as $v$ The selection of $\psi_1(u),\psi_2(u)$ is independent of the selection of $\psi_1(v),\psi_2(v)$
+% \end{lemma}
+% Denote $N_{\phi(v)}(v)= \left\{ u \mid u \in N(v) \land \phi(v) = \phi(u) \right\}$. \\
+% Let $u \in N_{\phi(v)}(v)$. Since $u$ and $v$ have the same color, this means that $u \notin S(v) \land v \notin S(u)$ and $u \notin G(v) \land v \notin G(u)$. meaning that according to the algorithm, $u$ chooses $\psi_1$ without taking into account $\psi_1(v)$. meaning $u,v$ chooses $\psi_1, \psi_2$ independently of each other.
+
+% \begin{lemma}
+% \label{psi_defective}
+% $\psi$ is $t+\frac{\Delta}{p}$-defective
+% \end{lemma}
+% Divide into cases.
+% \begin{itemize}
+%     \item $\forall u\in N_{\phi(v)}(v)$: According to lemma \ref{psi_1_2_t_defective}, $v$ picks $\psi_1(v), \psi_2(v)$ independently to $u$. \\ in the worst case, $v$ can share its $\psi(v)$ color with all $t$ described neighbors of his that have the same color as his.
+%     \item $u \in N(v) \backslash N_{\phi(v)}(v)$:  according to lemma \ref{psi_1_2_delta_defective}, $v$ can share $\psi_1, \psi_2$ with at most $\frac{\Delta}{p}$ neighbors. because $\psi$ is a concatenation of $\psi_1, \psi_2$. $v$ shares both $\psi_1$ and $\psi_2$ with at most $\frac{\Delta}{p}$ neighbors, meaning it shares $\psi$ with at most $\frac{\Delta}{p}$ neighbors (which do not have the same $\phi$ color as $v$)
+% \end{itemize}
+% To conclude, in the worst case, $v$ shares its color with at most other $t + \frac{\Delta}{p}$ neighbors.
+
+
+
+% ======================= NEW ============
+% ==================== NEW ===============
+% \begin{lemma}
+% \label{psi_defective_2}
+% $\psi$ is $t+\frac{\Delta}{p}$-defective
+% \end{lemma}
+% We will divide the proof to two extreme cases, and showing the requested defecting to both cases.
+% Denote $N_{\phi(v)}(v)= \left\{ u \mid u \in N(v) \land \phi(v) = \phi(u) \right\}$. \\
+% \begin{itemize}
+%     \item \underline{none of $N_{\phi(v)}$ have choose either $\psi_1$ or $\psi_2$}: then $v$ shares its $\psi_1$ color with at most $\frac{|S(v)|}{p}$ vertices. (because $N_{\phi(v)}$ haven't picked $\psi_1$ yet, and all of $G(v)$ vertices, waits for $v$ to pick its $\psi_1$ first, according to the algorithm). In a similar way, $v$ shares its $\psi_2$ color with at most $\frac{|G(v)|}{p}$ vertices. In addition, in the worst case, all of its neighbors in $N_{\phi(v)}$, can pick the same $\psi$ color as $v$, Hence in total,
+%     In the worst case $v$ shares its $\psi$ color with $\frac{|S(v)|+|G(v)|}{p} + t $ vertices, meaning $\psi$ is $\frac{(|S(v)|+|G(v)|}{p} + t)$-defective, and in particular it means that $\psi$ is $(\frac{\Delta}{p} + t)$-defective
+    
+%     \item \underline{all of $N_{\phi(v)}$ have choose both $\psi_1$ and $\psi_2$}: then $v$ shares its $\psi_1$ color with at most $\frac{|S(v)+t|}{p}$ vertices (because all of $G(v)$ vertices, waits for $v$ to pick its $\psi_1$ first, according to the algorithm). In a similar way  $v$ shares its $\psi_2$ color with at most $\frac{|G(v)+t|}{p}$ vertices. Hence in total,
+%     In the worst case $v$ shares its $\psi$ color with $\frac{|S(v)|+|G(v)|}{p} + \frac{2t}{p}$, vertices. which means in particular that $\phi$ is $(\frac{\Delta}{p} + t)$-defective (because $p \ge 2$ which yields $\frac{2t}{p} < t$).
+% \end{itemize}
+% We have shown that in both cases $\psi$ is  $t+\frac{\Delta}{p}$-defective. 
 
 \begin{lemma}
-\label{psi_1_2_delta_defective}
-
-% DELETE THIS 
-% $\forall v$, $v$ has at most $\frac{|S(v)|}{p}$ and $\frac{|G(v)|}{p}$ neighbors with same $\psi_1, \psi_2$ color as itself respectively. 
-
-$\forall v$, $v$ has at most $\frac{\Delta}{p}$ neighbors with same $\psi_1$ or $\psi_2$ color as itself respectively. 
-\end{lemma}
-proof for $p_1$, the proof of $p_2$ is identical. \\
-Be $v$ a vertex with degree $\Delta_v$. Because each vertex chooses $\psi_1$ to be the color used the least by its neighbors, there are at most $\frac{\Delta_v}{p}$ neighbors with the same $\psi_1$ color as $v$ according to the pigeon hole principle and due to the fact we choose the color that is used least by the neighbors (and it is upper bound by $\frac{\Delta}{p}$ where $\Delta$ is the maximal degree in the graph).
-
-\begin{lemma}
-\label{psi_1_2_t_defective}
-$\forall u$, neighbor of $v$ with the same color as $v$ The selection of $\psi_1(u),\psi_2(u)$ is independent of the selection of $\psi_1(v),\psi_2(v)$
-\end{lemma}
-Denote $N_{\phi(v)}(v)= \left\{ u \mid u \in N(v) \land \phi(v) = \phi(u) \right\}$. \\
-Let $u \in N_{\phi(v)}(v)$. Because $u$ and $v$ have the same color, it means that $u \notin S(v) \land v \notin S(u)$ and $u \notin G(v) \land v \notin G(u)$. meaning that according to the algorithm, $u$ chooses $\psi_1$ without taking into account $\psi_1(v)$. meaning $u,v$ chooses $\psi_1, \psi_2$ independently of each other.
-
-\begin{lemma}
-\label{psi_defective}
+\label{psi_defective_3}
 $\psi$ is $t+\frac{\Delta}{p}$-defective
 \end{lemma}
-Divide into cases.
+First, we will present few notations which will be useful. \\
+Denote $N_{\phi(v)}(v)= \left\{ u \mid u \in N(v) \land \phi(v) = \phi(u) \right\}$. \\
+Denote $A = \{ u \in N_{\phi(v)}(v) \mid \text{u has choose } \psi_1 \}$, let $k_1 = |A|$ \\
+Denote $B = \{ u \in N_{\phi(v)}(v) \mid \text{u has choose } \psi_2 \}$, let $k_2 = |B|$ \\
+Denote $C = $\overline{A \cup B}$ (Note $0 \le |C| \le t$), let $k_3 = |C| $
+
+According to the inclusion-exclusion principle, the number of vertices of $N_{\phi(v)}(v)$ which have not choose either $\psi_1$ or $\psi_2$ is $k_3 = t - |A \cup B| = t - |A| - |B| + |A \cap B| = t - (k_1 + k_2) + |A \cap B|$.
+Hence, According to the algorithm and the pigeon hole theorem
 \begin{itemize}
-    \item $\forall u\in N_{\phi(v)}(v)$: According to lemma \ref{psi_1_2_t_defective}, $v$ picks $\psi_1(v), \psi_2(v)$ independently to $u$. \\ in the worst case, $v$ can share its $\psi(v)$ color with all $t$ described neighbors of his that have the same color as his.
-    \item $u \in N(v) \backslash N_{\phi(v)}(v)$:  according to lemma \ref{psi_1_2_delta_defective}, $v$ can share $\psi_1, \psi_2$ with at most $\frac{\Delta}{p}$ neighbors. because $\psi$ is a concatenation of $\psi_1, \psi_2$. $v$ shares both $\psi_1$ and $\psi_2$ with at most $\frac{\Delta}{p}$ neighbors, meaning it shares $\psi$ with at most $\frac{\Delta}{p}$ neighbors (which do not have the same $\phi$ color as $v$)
+    \item the total number of vertices which can share $\psi_1(v)$ is $\frac{|S(v)| + k_1}{p}$
+    \item the total number of vertices which can share $\psi_2(v)$ is $\frac{|G(v)| + k_2}{p}$
+    \item the total number of vertices which have not choose any $\psi_1, \psi_2$ is $k_3$
 \end{itemize}
-To conclude, in the worst case, $v$ shares its color with at most other $t + \frac{\Delta}{p}$ neighbors.
+lets define $\psi(v) = \psi_1(v), \psi_2(v)$. In the worst case, any vertex $u$ which share $\psi_1$ color with $v$, also shares its $\psi_2$ color, similarly any vertex $x$ which share $\psi_2$ color with $v$, also shares its $\psi_1$ color. In addition in the worst case each vertex $u \in C$ can choose $\psi(v)$ as their color. \\
+To conclude, in the worst case there exists at most 
+\begin{doublespacing}
+\newline
+$\frac{|S(v)| + k_1}{p} + \frac{|G(v)| + k_2}{p} + k_3 =$
+\\[5mm]
+$\frac{|S(v)| + |G(v)|}{p} + \frac{k_1 + k_2}{p} + (t - k_1 - k_2 +  |A \cap B|) =$ 
+\\[5mm] 
+$\frac{|S(v)| + |G(v) +t }{p} - \frac{t}{p} + \frac{k_1 + k_2}{p} + (t - k_1 - k_2 +  |A \cap B|) =$
+\\[5mm]
+$\frac{\Delta}{p} + t + \frac{k_1 + k_2 - p*k_1 - p*k_2 - t + p * |A \cap B|}{p}  = $
+\\[5mm]
+$\frac{\Delta}{p} + t + \frac{k_1(1-p) + k_2(1-p) - t + p * |A \cap B|}{p} \underbrace{\le}_{|A \cap B| \le \min({k_1, k_2}), \text{ w.l.o.g } |A \cap B| \le k_1}$
+\\[5mm]  
+$\frac{\Delta}{p} + t + \frac{k_1(1-p) + k_2(1-p) - t + p * k_1}{p} =  \frac{\Delta}{p} + t + \frac{1}{p}*(\underbrace{k_1 - t}_{\le 0} + \underbrace{k_2(1-p)}_{\le 0}) \le  \boxed{\frac{\Delta}{p} + t}$
+\end{doublespacing}
+
+
+meaning, that in the worst case $v$ shares its $\psi$ color with at most $\frac{\Delta}{p} + t$ of its neighbours
+
 
 \begin{lemma}
-$\psi$ is $t+\frac{\Delta}{p}$-defective $p^2$-coloring
+$\psi$ is $t+\frac{\Delta}{p}$-defective $p^2$-coloring.
 \end{lemma}
-According to lemma \ref{psi_defective} and lemma \ref{psi_p2_coloring}
-
+According to Lemma \ref{psi_defective_3} and Lemma \ref{psi_p2_coloring}
 
 \subsubsection*{Complexity claims}
 
@@ -207,7 +275,7 @@ because there is no vertex $u$ with $\phi(u) < \phi(v)$, then by definition $S(v
 
 \textbf{Induction hypothesis}: for $\psi(v)=l-1$ it takes at most $l-2$ rounds to choose $\psi_1(v)$
 
-\textbf{Induction step}: By the induction hypothesis, all nodes with $\phi(u)=l-1$ can choose $\psi_1(u)$ in at most $l-2$ rounds. Let $v$ be a vertex with color $\phi(v)=l$. then after at most $l-2$ rounds, all $S(v)$ computes their $\psi_1$ color. It takes another round, for them to send $v$ their $\psi_1$ color. Hence, after at most $l-1$ rounds, $v$ can locally compute $\psi_1$
+\textbf{Induction step}: According to the induction hypothesis, all nodes with $\phi(u)=l-1$ can choose $\psi_1(u)$ in at most $l-2$ rounds. Let $v$ be a vertex with color $\phi(v)=l$. then, after at most $l-2$ rounds, all $S(v)$ compute their $\psi_1$ color. It takes another round, for them to send $v$ their $\psi_1$ color. Therefore, after at most $l-1$ rounds, $v$ can locally compute $\psi_1$
 
 \begin{lemma}
 \label{psi_2_rounds}
@@ -262,7 +330,7 @@ Algorithm $\mathcal{A}_1$ computes a $\frac{\Delta}{\log{\Delta}}$ defective col
 \label{A_2_parallel}
 The calculation of $\mathcal{A}_2$ on each induced graph can be done in parallel
 \end{lemma}
-Because each induced graph includes only vertices of same color, it means, there is not a vertex which is part of two $G[V_i], G[V_j]$. Hence, every induced graph is disjoints with all others. meaning, the application of $\mathcal{A}_2$ can be done in parallel, and during the execution of the algorithm, there isn't any message which is sent from one induced graph to another.
+Because each induced graph includes only vertices of same color, it means, there is not a vertex which is part of two $G[V_i], G[V_j]$. Hence, every induced graph is disjoint with all others. Meaning, the application of $\mathcal{A}_2$ can be done in parallel, and during the execution of the algorithm, there is no message which is sent from one induced graph to another.
 
 \begin{lemma}
 In step $5$ we defined a $0-$defective $O(\Delta*\log{\Delta})$ coloring for $G$
@@ -271,7 +339,7 @@ After application of algorithm $\mathcal{A}_2$, each induced graph has valid $O(
 =O(\Delta * \log{\Delta})$-coloring function of $G$ as follows: $\forall v \in G$ if $v \in V_i$, set $\Phi(v) = \varphi_i(v)$. 
 \begin{lemma}
 \label{parallel_reduction_tutorial}
-The parallel color reduction algorithm from the tutorial, which preforms on graph with maximal degree $\Delta$ with given $O(\Delta * \log{\Delta})$ coloring function $\Phi$ takes $O(\Delta * \log{\Delta})$
+The parallel color reduction algorithm from the tutorial, which preforms on graph with maximal degree $\Delta$ with given $O(\Delta * \log{\Delta})$ coloring function $\Phi$ takes $O(\Delta * \log({\log{\Delta}}))$
 \end{lemma}
 $\Phi$ is $0-$defective $O(\Delta*\log{\Delta})$ coloring, $G$ has maximal degree of $\Delta$. According to the algorithm presented in the tutorial, Given $\Phi$ we can compute $\Delta+1$ coloring in 
 $O(\Delta * \log{\frac{C}{\Delta}})$ where $C$ is the number of colors of $\Phi$, Hence the computation takes $O(\Delta * \log{\frac{\Delta*\log{\Delta}}{\Delta}})=O(\Delta * \log({\log{\Delta}}))
@@ -282,8 +350,8 @@ $
 \subsubsection*{Complexity}
 \begin{itemize}
     \item Step 1 takes $T_1(\Delta)$ rounds
-    \item According to lemma \ref{A_2_parallel} Step 2 is calculated on each induced graph in parallel. Hence the for loop is preformed in parallel and it takes in total $T_2(\frac{\Delta}{\log{\Delta}})$ rounds. 
-    \item Algorithm of step 6 takes $O(\Delta\log{\Delta})$ rounds by lemma \ref{parallel_reduction_tutorial}
+    \item According to lemma \ref{A_2_parallel} Step 2 is calculated on each induced graph in parallel. Hence the for loop is preformed in parallel and takes in total $T_2(\frac{\Delta}{\log{\Delta}})$ rounds. 
+    \item Algorithm of step 6 takes $O(\Delta\log{\Delta})$ rounds by Lemma \ref{parallel_reduction_tutorial}
 \end{itemize}
 
 Total complexity: $T_1(\Delta) + T_2(\frac{\Delta}{\log{\Delta}}) + O(\Delta * \log({\log{\Delta}}))$ 
