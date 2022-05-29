@@ -164,6 +164,12 @@ By Lemma \ref{discovery_large_diameter_parts} and the algorithm (row 12,13), eac
 Whether the part have dimater of size $O(\sqrt{n})$ or not, according to lemmas \ref{parts_dimater_D} and \ref{parts_dimater_sqrt_n}, its diameter is upper bounded by $D$ and $O(\sqrt{n})$ respectively. This implies that $O(O(\sqrt{n}) +D)=O(\sqrt{n} +D)$ is an upper bound of the diameter of each part. According to lemma \ref{edges_bound}, each edge appears at $\sqrt{n}$ of the subgraphs $G[P_i] \cup H_i$, and according to Lemma \ref{vertices_notify}, each part knows its shortcut. Therefore, the algorithm successfully computes the desired shortcut.
 
 
+\begin{lemma}
+\label{time_notify_root}
+It takes at most $D + \sqrt{n}$ iterations, for vertex $v$ to send its part index to $r$.
+\end{lemma}
+According to Lemma \ref{parts_bound_amount}, there are at most $\sqrt{n} -1 $ parts with diamater greater than $O(\sqrt{n})$, hence, the root will receive at most $\sqrt{n} -1$ unique messages. In the worst case, each vertex sends $\sqrt{n} -1$ unique messages to the root via the BFS tree. But because
+
 $\newline$
 Note: The calculation of each $\phi(v)$ is performed in parallel among different parts. Since each part $P_i$ is disjoint in node with all other parts, and because each node send the information regarding its $\phi$ value only to its $N_i(v)$ neighborhood, which are edges with both edges in $P_i$, i.e., each message as described stays within the component. Therefore, the calculation of different parts can be achieved in parallel.
 
