@@ -1,0 +1,572 @@
+\documentclass[11pt]{article}
+
+\newcommand{\numpy}{{\tt numpy}}    % tt font for numpy
+
+\topmargin -.5in
+\textheight 9in
+\oddsidemargin -.25in
+\evensidemargin -.25in
+\textwidth 7in
+\renewcommand{\baselinestretch}{1.25} 
+
+% psudo-code text
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{aligned-overset}
+
+\usepackage{fontspec}
+% \usepackage[noend]{algpseudocode}
+
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
+\algrenewcommand\algorithmicensure{\textbf{Postcondition:}}
+
+\usepackage{xfrac}
+
+
+\usepackage{setspace}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+
+
+\begin{document}
+
+% ========== Edit your name here
+\author{Ido Frankel - 318985108}
+\title{Distributed Graph Algorithms HW 3}
+\maketitle
+
+\medskip
+
+% ========== Begin answering questions here
+
+\section{Exercise 1}
+
+\subsection{Algorithm}
+
+\begin{algorithm}
+  \caption{$(\tilde{\Delta} + 1)$-coloring in Beeping model}
+  \begin{algorithmic}[1]
+    \Statex
+    \Function{$(\tilde{\Delta} + 1)$-coloring}{}
+        \Let{v.deactivate}{False} \Comment{$\forall v \in G$}
+        \For{$i=1, \dots$}
+            \For{$c=1, \dots, \tilde{\Delta}+1$}
+                \State each active vertex $v$ sends a beep with probability \sfrac{1}{$i$}
+                \If{$v$ beeped, and doesn't receive a beep from its neighbours}
+                    \Let{v.color}{c}
+                    \Let{v.deactivate}{True}
+                    \State notify neighbours about the color \Comment{each color iter. is divided to 2 slots}
+                    \State \Return{c}            
+                \EndIf
+            \EndFor
+        \EndFor
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+\label{vertex_colored_itertaion_i}
+Each vertex is being colored in iteration $i$ w.p $1 - \frac{\Delta}{i}$
+\end{theorem}
+Let $v$ be a node, with degree $d$, Let $X_{v_i}$ be an indicator variable that indicates if the neighbour $u_i$ of $v$ has picked same color as $v$. Let $X_v=\sum_{i=1}^{d}X_{v_i}$, then $Pr[X_{v_i}=1]=\sfrac{1}{i}$ and $E(X_v)= d \cdot \frac{1}{i} $. By Markov's inequality, $Pr[X_v \ge 1] \le \frac{d}{i} \le \frac{\Delta}{i}$. Hence $Pr[X_v = 0] \ge 1 - \frac{\Delta}{i}$, which is the probability that none of $v$'s neighbours has been colored with same color as $v$.
+
+
+
+
+
+
+\begin{theorem}
+\label{legal_coloring_i}
+The algorithm finishes in iteration $i$ w.p $1- \frac{n \cdot \Delta}{i}$
+\end{theorem}
+Using theorem \ref{vertex_colored_itertaion_i} and Union bound, we get \[
+Pr[\exists \: v, \text{which was not colored by iteration } i]=Pr[\bigcup (X_v \ge 1)] \underset {\text{U.B}}{\underbrace{\le}} \sum Pr[X_v \ge 1]= \] \[ n \cdot  Pr[X_v \ge 1] \le 
+\frac{n \cdot \Delta}{i} \]
+. Hence, the complementary probability, which is $Pr[\text{all } v, \text{were colored by iteration } i] \ge 1- \frac{n \cdot \Delta}{i}$
+
+
+\begin{theorem}
+The algorithm computes legal coloring w.p 1
+\end{theorem}
+By theorem \ref{legal_coloring_i}, the algorithm finishes computing legal coloring in iteration $i$ w.p at least $1- \frac{n \cdot \Delta}{i}$. Hence as $i \to \infty$, the probability of the algorithm to produces a valid coloring is \[\underset{i\to\infty}{\lim} P(\text{all vertices has been legally colored)}= \underset{i\to\infty}{\lim} 1- \frac{n \cdot \Delta}{i} =  1 \]
+
+
+
+\subsection{Lower Bound}
+Assume by contradiction there is an algorithm \(\mathcal{A}\) which computes $\Delta+1$ coloring in $\Delta -1$ rounds on Clique $G$ with $n$ vertices (thus the degree is $\Delta=n-1$). Denote $G'=(V',E')$ with $V'=V \cup \{v'\}$, and $E' = \{(s,t) \mid s,t \in V'\}$. $v'$ is a copy of specific node in $G$, which holds that in each iteration it does not beep alone (meaning, it either hasn't beeped, or if it beeps, there exists another vertex which beeps in same iteration).
+Denote \(\mathcal{A}\), \(\mathcal{A'}\) as the execution of the algorithm on $G,G'$ respectively.
+
+
+\begin{lemma}
+\label{single_beep_different_input}
+$v_1, v_2$ receive different input (under \(\mathcal{A}\)) in iteration $i$ iff only single vertex in the graph have beeped in iteration $i$, and it's either $v_1$ or $v_2$ 
+\end{lemma}
+$\leftarrow$: w.l.o.g $v_1$ have beeped (send $1$), and $v_2$ haven't (send $0$), Because no other vertex have beeped, than $v_1$ received $0$ as input, while $v_2$ received $1$, resulting with $v_1,v_2$ receiving different inputs.
+\newline
+$\rightarrow$: $v_1, v_2$ received different input, w.l.o.g $v_1$ received $1$ and $v_0$ received $1$, than according to the model, $v_1$ has a neighbour which beeped, Because $v_2$ haven't received beep from any of its neighbours, its mean $v_2$ have beeped, and its the only vertex which have beeped.
+
+\begin{lemma}
+\label{single_beep_j_iterations}
+In $j$ iterations, there are at most $j$ vertices which have sent beep alone in their iteration (meaning that in the iteration which they beeped, there weren't any other vertex which beeped).
+\end{lemma}
+In each iteration, there are two options:
+\begin{enumerate}
+    \item a single vertex have beeped, while other haven't
+    \item there are several vertices which have beeped, or no one have beeped.
+\end{enumerate}
+Hence, the first option can occur at most $j$ times (one per iteration).
+
+\begin{lemma}
+\label{v_exists}
+such $v'$ exists.
+\end{lemma}
+By lemma \ref{single_beep_j_iterations}, in $\Delta-1 = n-2$ iterations there are at most $n-2$ vertices which have sent beep alone (under \(\mathcal{A}\)). By pigeonhole principle there exists a vertex which hasn't sent a beep alone during all the execution of \(\mathcal{A}\)
+
+\begin{lemma}
+The execution (input and output) of all vertices in $V$ is the same under \(\mathcal{A'}\) as in  \(\mathcal{A'}\), and the execution of $v'$ equals to $v$ in every iteration.
+\end{lemma}
+proof by induction
+
+\textbf{Base}: In iteration $i=1,$ every vertex does not have any previous knowledge, hence the output of every $u\ne v'$ vertex under \(\mathcal{A}\) and \(\mathcal{A'}\) is the same. and the output of $v'$ equals $v$ (because one is duplication of the other)
+
+
+\textbf{Induction hypothesis}: Assume that for every iteration $i$, $\forall u \ne v'$ has same input and output under \(\mathcal{A'}\) as in \(\mathcal{A}\), and $v'$ has the same input and output as $v$
+
+\textbf{Induction step}: proof for iteration $i+1$,
+\begin{itemize}
+    \item \underline{$v$ has beeped in iteration $i+1$ under \(\mathcal{A}\)}: By induction hypothesis, all vertices has the same execution (input and output) up until the current iterations, hence $v \text{ will}^{\star}$ also beep under \(\mathcal{A'}\). By lemma \ref{v_exists}, $v$ does not beep alone, hence there exists $u\in (V - \{v\})$ which also beeps in the current iterations, meaning the input of all vertices (in particular $v,v'$) is the same. 
+      \item \underline{$v$ has not beeped in iteration $i+1$ under \(\mathcal{A}\)}: than $v'$ hasn't beeped as well, as it is a duplication of $v$ and has same execution history as $v$. In addition because $G'$ is clique, the input of all vertices is the same as it was in \(\mathcal{A}\).
+\end{itemize}
+Meaning, the execution of every vertex $u \in V$ under \(\mathcal{A}\) and \(\mathcal{A'}\) is the same. and the execution of $v'$ equal to the execution of $v$ under \(\mathcal{A'}\).
+Meaning, in every iteration $v,v'$ produce same output (because $v'$ is duplication of $v$) and receive the same input as shown, Thus \(\mathcal{A}\) and \(\mathcal{A'}\) produce same color for $v,v'$ at the end of the algorithm, which is contradiction to valid coloring of clique.
+
+Note($\star$): If vertex has same execution (input and output) of some algorithm until iteration $i$ in both \(\mathcal{A}\) and \(\mathcal{A'}\)., it means that even if the algorithm is randomized (and the next phase might be one of several options), there exists a path in the decision tree, which leads to the same next execution as it did under \(\mathcal{A}\). (The "will" - refers to  \(\mathcal{A}\), as the desire flow, which is possible).
+
+\newpage
+\section{Exercise 2}
+
+\subsection{Warm-up}
+
+Note:
+At first, the question was finding a solution with the CONGEST model, which was later changed to LOCAL. The correctness of the algorithm is the same, the only difference is that in CONGEST I showed $O(n \cdot k)$ iterations while in local I showed $O(k \cdot \log{n})$
+I kept the complexity derivations of CONGEST, and added a seperate for LOCAL.
+
+\begin{algorithm}
+  \caption{Finding ($k, k\log{n}$)-ruling set for $U \subseteq V$}
+  \begin{algorithmic}[1]
+    \Statex
+    \Function{Ruling}{$U, k, k\log{n}$}
+        \If{$U$ only $1-$bit set} \Comment{each vertex in U is one bit}
+            \State \Return{vertex with bit 0}
+        \EndIf
+        
+        \State{$U_0 \overset{\triangle}{=} \{ u \in U \mid u\text{'s first bit is } 0 \} $} \Comment{$\forall u \in U_0,U_1:$ omitting the first ID's bit}
+        \State{$U_1 \overset{\triangle}{=} \{ u \in U \mid u\text{'s first bit is } 1 \} $}
+      
+        \State{$S_0 = Ruling(U_0, k,k(\log{n}-1))$} \Comment{$S_0, S_1$ computation is in parallel}
+        \State{$S_1 = Ruling(U_1, k,k(\log{n}-1))$}
+
+        \State{$S = S_0 \cup \{s_1 \in S_1 \mid \forall s_0 \in S_0:$ dist$(s_1, s_0) \ge k\}$}
+        
+        \State \Return{$S$}
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+
+\subsubsection*{Correctness}
+
+\begin{theorem}
+\label{rulling_set_i}
+
+The algorithm calculates valid $(k, k \cdot i)-$ruling set of $U$ consists vertices with $i$ bits.
+\end{theorem}
+Proof by induction on the ID's length (number of bits), we will prove that after the $i$'th stage of the recursion the algorithm computes a valid $(k, k \cdot i)-$ ruling set $S^{|i|}$, of $U^{|i|}$. (when $U$, consist of vertices with $i$ bits)
+
+\textbf{Base}: for $U^{|i|}$ ($U$ contains 1 bit vertices) is a set containing at most 2 vertices (1 bit, each), thus $S$ is clearly a valid $(k, k)-$ ruling set of $U^{|1|}$ (the set in the bottom of the recursion tree).
+
+
+\textbf{Induction hypothesis}: Assume that for $U^{|i-1|}$ (an $i-1$ bits set) S is a valid $(k, k \cdot (i-1))-$ ruling set. 
+
+\textbf{Induction step}: According to the induction hypothesis, $S^{|i-1|}_{0}, S^{|i-1|}_{1}$ are a valid $(k, k*(i-1))-$ruling sets of $U^{|i-1|}_{0}, U^{|i-1|}_{1}$ respectively. According to line 9 of the algorithm, S is a union of $S_0$ and vertices $s_1 \in S_1$ which are at distance at least $k$ from $S_0$.
+\begin{itemize}
+    \item \underline{$\forall s_1, s_2 \in S \: \text{dist}(s_1,s_2) \ge k$:}
+        \begin{itemize}
+            \item if $s_1, s_2 \in S^{|i-1|}_{0}$ or $s_1, s_2 \in S^{|i-1|}_{1}$, the claim holds immediately, since they are valid ruling-sets.
+            \item w.l.o.g $s_0 \in S^{|i-1|}_{0}$, $s_1 \in S^{|i-1|}_{1}$, then by definition of $S$, it consists only vertices in $S^{|i-1|}_{1}$ which are at distance at least of $k$ from every vertex in $S^{|i-1|}_{0}$
+        \end{itemize}
+    Hence the separation claim of $S$ is satisfied.
+    
+    \item \underline{$\forall v\in U^{|i|}, \exists s \in S^{|i|}$ which holds $\text{dist}(s,v)$ $\le k \cdot i$}:
+    
+    Note $U^{|i|}=U^{|i|}_0 \cup U^{|i|}_1$, and $S^{|i-1|}_0$ is a valid $(k, k\cdot(i-1))-$ruling set.
+    
+    if $v \in U^{|i-1|}_0$, It holds that $\exists s_0 \in S^{|i-1|}_0$
+    s.t \boxed{\text{dist}(v,S^{|i-1|}_{0}) = \text{dist}(v, s_0) \le k \cdot (i-1) \le k \cdot i}.
+    
+    Otherwise $v \in  U^{|i-1|}_1$, hence there exists $s_1 \in S^{|i-1|}_1$ s.t $\text{dist}(v, s_1) \le k \cdot i$.
+    If $s_1 \in S$, we done, otherwise because $s_1 \in U^{|i|}$, it holds there exists $s''$ s.t $\text{distance}(s_1, s'') \le k$, Hence according to the triangle inequality we receive (for $s'' \in S \cap S^{|i-1|}_{1})$: 
+    
+    \boxed{\text{dist}(v,S^{|i-1|}_1) \le \text{dist}(v,s'') + \text{dist}(s'',s_1) \le k \cdot (i-1) + k = k \cdot i}
+    
+    Hence \boxed{dist(v, S) \le \min\{\text{dist}(v,S^{|i-1|}_0), \text{dist}(v,S^{|i-1|}_1)\} \le k \cdot i}
+    
+\end{itemize}
+
+\begin{corollary}
+\label{rulling_set_logn}
+The algorithm computes valid  $(k, k\cdot(\log{n}))-$ruling set
+\end{corollary}
+By theorem \ref{rulling_set_i}, for set $U$ consists of $i$ bits vertices, the algorithm computes an $(k, k \cdot i)-$ruling set. Thus for $U$ which consists of $n$ vertices (each vertex ID's length is $\log{n}$), it computes a valid $(k, k \cdot \log{n})-$ruling set
+
+
+\subsubsection*{Complexity}
+Note: The recursion depth begins with depth 0
+
+\begin{corollary}
+At depth $i$ of the recursion, Calculating $S$ takes $O(k* 2^{i})$  iterations in CONGEST
+\label{calculating_S_1_iteration_i}
+\end{corollary}
+
+According to the algorithm, calculating $S$ requires to know which vertices of $S_1$ are at distance at least $k$ from $S_1$, it can be achieved in $k$ times \#number-of-groups iterations at the $i$'th stage of the recursion as follow:
+$\forall s \in S_0$, s sends  "$k$" to all its neighbours, each vertex sends the maximal number it received minus 1. (and stop sending when reaching negative number) (meaning, if neighbor received multiple messages from same group in a single round, it takes the maximal among each group and broadcast it, in addition it will broadcast only messages with higher $k$ values then it previously sent for each group). if $s_1 \in S_1$ received a message from any $s_0$, it knows that it should not be in $S$, as it distance from $s_0$ is less than $k$.
+
+At stage $i$ of the recursion, the number of different $S'_1$ groups at the recursion tree is $2^{i}$ (e.g. at 0-depth, there are only $2^{0}=1$ different $S'_1$ groups, to calculate distance from). In the worst case, vertex $v$ might send $k$ messages from each group. Thus $O(k \cdot 2^{i})$ 
+
+
+\begin{theorem}
+\label{Complexity_2_1}
+Complexity is $O(k \cdot n)$ rounds in CONGEST
+\end{theorem}
+There are $\log{n}$ recursion levels in the recursion tree, each level takes
+$O(k \cdot 2^{i-1})$ rounds by corollary \ref{calculating_S_1_iteration_i}.
+$\sum_{i=0}^{\log{n}-1} k \cdot 2^{i} = O(k \cdot n)$ rounds
+
+\begin{corollary}
+At depth $i$ of the recursion, Calculating $S$ takes $O(k)$  iterations in LOCAL
+\label{calculating_S_1_iteration_i_LOCAL}
+\end{corollary}
+According to the algorithm, calculating $S$ requires to know which vertices of $S_1$ are at distance at least $k$ from $S_1$, it can be achieved in $k$ iterations at the $i$'th stage of the recursion as follow:
+$\forall s \in S_0$, s sends  "$k$" to all its neighbours, each vertex sends the maximal number it received minus 1. (and stop sending when reaching negative number) (meaning, if neighbor received multiple messages from same group in a single round, it takes the maximal among each group and broadcast it, in addition it will broadcast only messages with higher $k$ values then it previously sent for each group). if $s_1 \in S_1$ received a message from any $s_0$, it knows that it should not be in $S$, as it distance from $s_0$ is less than $k$.
+
+At stage $i$ of the recursion, under LOCAL model, each vertex can send in a single round all the messages it received. Hence each message will pass through $k$ nodes, and then will be discarded. Hence $O(k)$ iterations.
+
+\begin{theorem}
+\label{Complexity_2_1_local}
+Complexity is $O(k \cdot \log{n})$ rounds in LOCAL
+\end{theorem}
+There are $\log{n}$ recursion levels in the recursion tree, each level takes $O(k)$ rounds by corollary \ref{calculating_S_1_iteration_i_LOCAL}. Hence $O(k \cdot \log{n})$ rounds.
+
+\newpage
+\subsection{Ruling Set from Coloring}
+Note: this question is under LOCAL model.
+
+Roadmap: we will divide $V$ to $c^{\frac{1}{k}}$ different group, where each group contains vertices with color taken from a predefined subset of $[c]$. Later we will use recursion (similarly to previous subsection) in order to compute a (2,k) ruling set of each group $U_i$, and finishes with sequential passing over all $U_i$, and taking vertices of $U_i$ only if its distance from previous $U_{j< i}$ is at least 2.
+For simplicity we will assume the given $c$-coloring spans the range $[0, c-1]$.
+Denote the coloring function as $\phi$.
+
+\begin{algorithm}
+  \caption{Finding (2,k)-Ruling Set}
+  \begin{algorithmic}[1]
+    \Statex
+    \Function{RulingSet}{$V$, $[c_{begin}, c_{end}]$ (color indices)}
+        \Let{$\lambda$}{$\lfloor(c_{end} - c_{begin})^{\frac{1}{k}}\rfloor$}
+        \If {$\lambda == 1$} \Comment{only single color in set}
+            \Let{$U$}{$V$}
+        \Else
+            \Let{$colors_i$}{$[i \cdot \lambda, ((i+1) \cdot \lambda ) - 1]$} 
+            
+            \Let{$V_i$}{$ \{ v \in V \mid \phi(v) \in colors_{i} \} $}
+            \Let{$U_i$}{$RulingSet(V_i, colors_i)$} \Comment{In parallel for every group}
+            
+            \Let{$U$}{$U_0$}
+            \For{$j=1, \dots, j \le \lambda -1$}
+                \For{$v \in U_j$} \Comment{Done in parallel for every vertices within same group}
+                    \If{$\not \exists u \in (N(v) \cap U)$}
+                        \Let{$U$}{$U \cup \{ v\}$}
+                    \EndIf
+                \EndFor
+            \EndFor
+            
+        \EndIf
+        
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Correctness}
+
+\begin{lemma}
+\label{U_RULING_SET_correctness}
+The algorithm calculates valid (2, k)−ruling set of V
+\end{lemma}
+The Algorithm correctness is heavily similar to previous subsection. proof by induction on the recursion depth, 
+%when the algorithm, returns from the $i$ call of the recursion, the result is $(2, k \cdot {\frac{c}{i}}^{\frac{1}{k}})$
+% start of induciton =================================================================================
+
+\textbf{Base}: for $i = 1$ (bottom recursion step) ($V$ is monochromatic vertex set). Because $c$ is valid coloring, any two vertices $x,y \in V$ satisfies $dist(x,y) \ge 2$, hence $U$ is valid $(2,1)-$ruling set
+
+\textbf{Induction hypothesis}: Assume that for the last $i$ recursion stage (from bottom) returns a valid (2,$i$) ruling set.
+
+\textbf{Induction step}: According to the induction hypothesis, $\forall j\in[1, \lambda^{k-1}] U^{|i+1|}_{j}$ are all valid $(2, i)-$ruling sets of $V^{i+1}_{j}$ respectively. According to line 13 of the algorithm, U is a union of $U_0$ and vertices from all $U_{ \le j}$ s.t $u_{j_k} \in U_j$ is at distance at least 2 from $U$.
+\begin{itemize}
+    \item \underline{$\forall u_1, u_2 \in U \: \text{dist}(u_1,u_2) \ge 2$:}
+        \begin{itemize}
+            \item if $u_1, u_2 \in U^{|i-1|}_{j}$ (for some $j) $, the claim holds immediately, since $U^{|i-1|}_{j}$ is valid ruling set.
+            \item if $u_0 \in S^{|i-1|}_{j}$, $u_1 \in S^{|i-1|}_{k}$ (w.l.o.g $j < k$), then by definition of $U$, it consists only vertices of $U^{|i-1|}_{k}$ which are at distance at least of 2 from every vertex in $U$ (which by the time $U_k$ is treated, $U$ might consists vertices from $U_j$).
+        \end{itemize}
+    Hence the separation claim of $U$ is satisfied.
+    
+    \item \underline{$\forall v\in V^{|i|}, \exists u \in U^{|i|}$ which holds $\text{dist}(v,u)$ $\le i$ }:
+    
+    Note $V^{|i|}= \bigcup_{j} V^{|i-1|}_{j}$, and $\forall j\in[1, \lambda^{k-1}] U^{|i-1|}_j$ is a valid $(2,i-1)-$ruling set.
+    if $v \in V^{|i-1|}_0$, It holds that $\exists u_{0_l} \in U^{|i-1|}_0$
+    s.t \boxed{\text{dist}(v,U^{|i-1|}_{j}) = \text{dist}(v, u_{0_l}) \le i}.
+    
+    Otherwise $v \in  V^{|i-1|}_{l \ge 1}$, hence there exists $u_{l_m} \in U^{|i-1|}_l$ s.t $\text{dist}(v, u_{l_m}) \le i-1$.
+    If $u_{l_m} \in U$, we done, otherwise because $u_{l_m} \in V^{|i|}$, it holds there exists $u''\in U$ s.t $\text{distance}(u_{l_m}, u'') \le 1$ ($u''$ and $u_{l_m}$ must be neighbours, otherwise, $u_{l_m}$ would have been in $U$) , Hence according to the triangle inequality we receive: 
+    
+    \boxed{\text{dist}(v,U^{|i-1|}_j) \le \text{dist}(v,u'') + \text{dist}(u'',u_{l_m}) \le i-1 + 1 = i}
+    
+    Hence \boxed{dist(v, U) \le \min_{j}\{\text{dist}(v,U^{|i-1|}_j)\} \le i}
+    
+\end{itemize}
+
+\begin{corollary}
+\label{rulling_set_2_k}
+The algorithm computes valid $(2, k)-$ruling set
+\end{corollary}
+By theorem \ref{U_RULING_SET_correctness}, for set $V$ with $c$-coloring, the algorithm computes an $(2, i)-$ruling set (where $i$ is the depth of the recursion). Thus for $U$ which is divided to $\lambda = c^{\frac{1}{k}}$ groups in each recursion step, has at most $\log_{\lambda}{c}$ recursion stages, which is upper bounded by $k$ (as I will show in lemma \ref{U_RULING_SET_complexity}. Thus the algorithm computes valid $(2, k)-$ruling set.
+
+
+\subsubsection*{Complexity}
+\begin{lemma}
+\label{U_RULING_SET_complexity}
+The algorithm takes $O(k \cdot c^{\frac{1}{k}})$ iterations to compute $U$
+\end{lemma}
+In each recursion step, we divide $V$ to $\lambda$ different groups, which is later followed by $\lambda -1$ iterations in order to compute unify valid ruling set of $v$ of the given recursion step. Hence we get the following formula $T(c) = T(\frac{c}{\lambda}) + \lambda - 1$. In every iterations, the size of $V$ is decreased by $\lambda$ (divided to $\lambda$ groups), hence the recursion depth is at most $\log_{\lambda}{c}$. It holds $\lambda = c^{\frac{1}{k}} \rightarrow \log_{\lambda}{\lambda} = \frac{1}{k} \cdot \log_{\lambda}{c} \rightarrow k = \log_{\lambda}{c}$. 
+Thus $ T(c) = T(\frac{c}{\lambda}) + \lambda - 1 \le \log_{\lambda}{c} \cdot (\lambda -1)  \le \log_{\lambda}{c} \cdot \lambda \le k \cdot \lambda \le \frac{1}{k} \cdot c^{\frac{1}{k}}$ iterations.
+
+
+\newpage
+\section{Exercise 3}
+
+\subsection{Handling Insertions}
+After the local-ration $2-$approximation on $G$ has finished, we insert an edge $\{u,v\}$. We can obtain $2-$approximation $G_1$ as follows:
+buying $z_{u,v}=\min\{w'(u), w'(v)\}$ (where $w'$, is the weight function after the 2-approximation has finished on $G$).
+
+\begin{algorithm}
+  \caption{Finding local-ratio 2-approximation after insertion}
+  \begin{algorithmic}[1]
+    \Statex
+    \Function{local-ratio 2-approximation with insertion}{$G$, $e=\{u,v\}$}
+        \State run local-ration 2-approximation on $G$ \Comment{Denote VC as $U$}
+          \If{$s \notin \{u,v\}$}
+            \State \Return{True iff $s \in U$}
+        \EndIf
+        
+        \If{$s \in U$}
+            \State \Return{s in VC}
+        \EndIf
+        \State $z_e=\min\{w'(u),w'(v)\}$ \Comment{$w'$ is remaining weight values after the 2-approximation on $G$}
+        \Let{$w'(u)$}{$w'(u) - z_e$}
+        \Let{$w'(v)$}{$w'(v) - z_e$}
+        \Let{$U$}{$U \cup \{t \in \{u,v\} \mid w'(t) =0$ \}}
+        \State \Return{s in VC if w'(s) == 0}
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+After the local-ratio 2-approximation algorithm runs on $G$, It takes $O(1)$ rounds to compute which vertex among $v,u$ has smaller weight, and enters the minimal to the cover (if both have same weight, enters both).
+Denote $\text{OPT}(G)$ as the optimal VC of G.
+
+\begin{corollary}
+\label{u_wight_lower_than_neighbours_sum}
+$\forall u \in \text{OPT}(G), w(u) \le \underset{s \in N(u)}{\sum} w(s)$ 
+\end{corollary}
+Assume by contradiction that it is not correct, then 
+$\text{OPT}(G') = (\text{OPT}(G) - \{u\} ) \cup \{ s \mid s \in N(u) \}$, we have the following.
+
+\begin{align*}
+\boxed{w(\text{OPT}(G))} = \underset{s \in OPT(G)}{\sum} w(s) = ( \underset{s \in OPT(G) - \{u\} }{\sum} w(s) ) + w(u) \boxed{>} \\ > ( \underset{s \in OPT(G) - \{u\} }{\sum} w(s) ) + \underset{t \in N(u) }{\sum} w(t)= \boxed{w(OPT(G')}
+\end{align*}
+
+Thus, $w(\text{OPT}(G)) > w(\text{OPT}(G'))$ and OPT$(G')$ is a valid set cover, since all edges are covered either by their original vertex, or if an edge was covered by $u$, it now covers by its neighbor. All of the above leads to the contradiction to the optimally of $OPT(G)$
+
+
+\begin{theorem}
+The procedure computes a valid 2-approximation VC of $G_1$
+\end{theorem}
+Let $U$ be a valid 2-approximation VC of $G$, and let $\{u,v\}$ be the edge inserted to $G$, creating $G_1$. Divide into cases:
+\begin{itemize}
+    \item \underline{Either $u,v \in U_G$}: $U_G$ is a valid 2-approximation VC of $G$, since $e=\{u,v\}$ is covered by either $u,v$ it is also 2 approximation VC of $G_1$ as 
+    $w(U_{G_1})=w(U_G) \le w(OPT(G) \le w(OPT(G_1))$ (as the optimally VC of $G_1$ is also VC of $G$)
+    \item \underline{both $u,v \notin U_G$}:
+        \begin{itemize}
+            \item \underline{both $u,v \notin OPT(G)$}: w.l.o.g $w(u) \le w(v)$, hence according to the algorithm $u \in U_{G_1}$ (as it must be valid VC), thus by by corollary \ref{uv_notin_UG_OPTG} $w(OPT(G)) \le w(OPT(G_1)) - w(u)$ holds. Meaning
+            \begin{align*}
+            w(U_{G_1}) = w(U_G) + 2\cdot \min\{w(u), w(v)\} = w(U_G) + 2\cdot w(u) \le 2 \cdot w(OPT(G) + 2\cdot w(u) \\ \le 2 \cdot w(OPT(G_1)) - 2 \cdot w(u) + 2\cdot w(u) = 2 \cdot w(OPT(G_1))
+            \end{align*}
+
+            Hence $U_{G_1}$ is a valid 2-approximation VC of $G_1$
+            
+            \item \underline{w.l.o.g $u \in OPT(G)$}: by corollary \ref{u_wight_lower_than_neighbours_sum} it holds $w(u) \le \underset{s \in N(u)}{\sum} w(s)$. if $w(u)$ is lower than of of its neighbours, than it would have been part of $OPT(G)$ after the algorithm finish running on $G$, otherwise $w(u)$ is greater than all of its neighbours, hence in each itertation, $w(u)$ will be decreased by the $w(s)$ for $s\in N(u)$, hence by corollary  \ref{u_wight_lower_than_neighbours_sum}, when 2-approximation algorithm on $G$ finishes $w(u)=0$. Contradiction that $u \notin U_G$
+        \end{itemize}
+\end{itemize}
+
+
+\begin{corollary}
+If $u,v \notin U_G \land u,v \notin OPT_G$ then $w(OPT(G)) \le w(OPT(G_1)) - \min\{w(u), w(v)\}$
+\label{uv_notin_UG_OPTG}
+\end{corollary}
+Assume by contradiction $w(OPT(G)) > w(OPT(G_1)) - \min\{w(u), w(v)\}$. w.l.o.g $w(u) \le w(v)$. then by taking $u$ to $OPT({G_1})$, and then choosing the optimal VC on the remaining graph, we will receive an optimal VC of $G$, (which by adding $u$ is also valid (not necessary optimal) VC of $G_1$)
+
+According to the assumption $w(OPT(G)) > w(OPT({G_1})) - \min\{w(u), w(v)\}$, meaning the valid VC of ${G_1}$ (without $u$), which is also valid VC of $G$, has lower weight than $OPT(G)$. contradiction to $OPT(G)$ optimally.
+
+
+\subsubsection*{Complexity}
+It takes $O(1)$ rounds to obtain the 2-approximation $G_1$ (given 2 approximation on $G$), as describe above (calculating which of $u,v$ has lower remaining weight).
+
+[for completeness]
+In total (without previous knowledge about the 2-approximation of $G$ it takes $O(V)$ iterations, as in each iteration, we decrease at least one vertex to 0-weight. hence after $O(V)$ iterations there aren't any vertices in the remaining graph).
+
+\newpage
+\subsection{Handling Deletions}
+Let $e=(u,v)$ be the edge which was deleted from the graph, and let $S$ be the 2-approximation VC of the original $G$ graph.
+Note: w.l.o.g assuming $v \in S$, if also $u \in S$, assume w.l.o.g $w(v) \le w(u)$
+
+\begin{itemize}
+    \item Denote $G'=(V',E')$ as $V'=V, E'=E-\{e\}$.
+    \item Denote $\mathcal{A}$ as the local-ratio algorithm procedures on $G$, and $\mathcal{A'}$ be an identical procedures steps on $G'$.
+    \item for $e=(x,y)$, Denote $Z_e=\min\{w_G(x), w_G(x)\}$, the discarded weight (in both $\mathcal{A, A'}$) as it was when $e$ was chosen in $\mathcal{A}$
+\end{itemize}
+Note that every weight reduction during $\mathcal{A'}$ is determined by the weighs of G, (and not by the weights of $G'$).
+
+\begin{algorithm}
+  \caption{Finding local-ratio 2-approximation after deletion}
+  \begin{algorithmic}[1]
+    \Function{local-ratio 2-approximation with deletion}{$G$, $S$, $e=\{u,v\}$}
+        \Let{U}{S}
+        \If{e was not chosen by 2-approx algorithm on $G$}
+            \State \Return{S}
+        \EndIf
+        
+        \State $w(u) = w(u) + Z_e$ \Comment{At the end of approx-execution on $G$}
+        \State $w(v) = w(v) + Z_e$ \Comment{$Z_e = \min\{w_G(u), w_G(v)\}$}
+                
+        \State $u$ waits while $v$ finishes next two steps \Comment{u waits for 2 iterations}
+         \For{$x \in N(v)$}
+                \State $x$ sends $v$, its weight at the end of the algorithm.
+            \EndFor
+        \State $v$ simulates local-ratio of its neighbours, and send them their respective updated weight.
+        \If{$x \in N(v) \cup \{v\}$ and $w(x) == 0$}
+            \Let{$U$}{$U \cup \{x\}$}
+        \EndIf
+        
+        \If{$u \in S$}
+            \For{$x \in N(u)$}
+                \State $x$ sends $u$, its weight at the end of the algorithm.
+            \EndFor
+            \State $u$ simulates local-ratio for all touching edges, and sends its neighbours their respective weight.
+        
+            \For{$x \in N(u) \cup \{u\}$}
+                \If{$w(x) == 0$}
+                    \Let{$U$}{$U \cup \{x\}$}
+                \EndIf
+            \EndFor
+        \EndIf
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{lemma}
+\label{w_g_less_w_g_tag}
+$\forall x \in V, w_G(x) \le w_{G'}(x)$ for every iterations in both \( \mathcal{A}, \mathcal{A'}\)
+\end{lemma}
+proof by induction on iterations (note that if $e$ was selected during the execution of $\mathcal{A}$, then we will add an idle step in $\mathcal{A'}$ for consistency.
+Denote the edge which was handle during the $i$'th iteration as $e_i$
+
+\textbf{Base}: In iteration $i=1,$:
+\begin{itemize}
+    \item \underline{if $e_i = e$}: we haven't changed the weight of edges in $G'$ and in $G$ we have decrease the weights of $u,v$ by $Z_e$, other vertices left unchanged, hence $w_G(x) \le w_{G'}(x)$
+    \item \underline{if $e_i=(x,y) \ne e$}: we have decreased both graph by $\min\{w_G(x),w_G(y)\}$
+\end{itemize}
+Hence for every $u \in V: w_G(u) \le w_{G'}(u)$
+
+
+\textbf{Induction hypothesis}: Assume correctness for iterations until $i$
+
+\textbf{Induction step}: proof for iteration $i+1$,
+\begin{itemize}
+    \item \underline{if $e_i = e$}:
+        \begin{itemize}
+            \item $for x \ne u,v$ we haven't change the weight, then by induction assumptions $w_G(x) \le w_{G'}(x)$
+            \item for $u,v$ by induction hypothesis $w_G(u) \le w_{G'}(u)$ and $w_G(v) \le w_{G'}(v)$, thus by reducing $z_e$ in $G$ and non reducing in $G'$ the inequality still holds.
+        \end{itemize}
+    \item \underline{if $e_i=(x,y) \ne e$}: in both $G,G'$ we reduce the weight by  $\min\{w_G(x),w_G(y)\}$, hence the inequality holds.
+\end{itemize}
+
+
+\begin{lemma}
+\label{lemma_2}
+every edge $e\in E'$ s.t $u,v \notin e$ is covered by $\mathcal{A'}$
+\end{lemma}
+$\mathcal{A}$ on $G$ is a local-ratio algorithm, hence according to its correctness, by the end of the algorithm, it covers every edge $(x,y) \in E$, and in particular every edge $(x,y) \in E'$ s.t $x,y \ne u,v$. Meaning either $x,y$ (or both) has $w_G(x), w_G(y)=0$. By lemma \ref{w_g_less_w_g_tag} we get that at the end of execution $\mathcal{A}, \mathcal{A'}$ every vertex $s \ne u,v$ holds $w_G(s)=w_{G'}(s)$, thus by lemma \ref{w_g_less_w_g_tag} it satisfies $w_{G'}(s) = 0$ 
+
+\begin{lemma}
+\label{lemma_3}
+Every weight reduction step is valid local-ratio step
+\end{lemma}
+As noted before, every weight reduction step is done by the weight of the corresponding iteration and vertex weight in $G$, as such, for $e=(x,u), (x,v)$, we might not reduce any of touching vertices to zero weight in a single iterations. nevertheless it is still a local-ratio step (according to lecture 9, slide 17), but its takes more iterations to reduce a vertex weight to zero, and then taking at least one to the cover
+
+\begin{lemma}
+\label{A_TAG_AS_WHILE_LOCAL_RATIO}
+$\mathcal{A'}$ is valid local-ratio algorithm
+\end{lemma}
+Under $\mathcal{A}$ execution on $e=(x,y) \in E'$, we reduce $z_e$ from both endpoints. By lemma \ref{w_g_less_w_g_tag}, it holds $w_G'(x) \ge w_G(x)$, hence every iteration in $\mathcal{A'}$ satisfies $z_e = \min\{w_G(x), w_G(x)\} \le \min\{w_{G'}(x), w_{G'}(x)\}$, means every iteration of $\mathcal{A'}$ is local-ratio step.
+
+\begin{lemma}
+\label{lemma_5}
+At the end of $\mathcal{A, A'}, \forall x \ne \{u,v\} \: w_G(x)=w_{G'}(x), \forall y\in\{u,v\} \: w_{G'}(y)=w_G(y) + Z_e$
+\end{lemma}
+Let $x\ne u,v$, than except the choice of $e$, both algorithms preforms the same on all nodes, meaning every weight reduction which is preform in $G$ also occurs in $G'$, thus $ w_G(x)=w_{G'}(x)$
+
+for $y=u,v$: in case $e$ was not elected by $\mathcal{A}$, then $w(y)$ was not reduced in $\mathcal{A}$ as well as in $\mathcal{A'}$ (meaning, $Z_e = 0$), hence $ w_G(y)=w_{G'}(y)$, if it was elected by $\mathcal{A}$, then it was reduced by $Z_e$, but not in $\mathcal{A'}$ (because the edge does not exists), Thus $w_{G'}(y)=w_G(y) + Z_e$
+
+
+\begin{lemma}
+\label{A_TAG_VALID_VC}
+The algorithm produces valid VC of $G'$
+\end{lemma}
+By lemma \ref{lemma_5} it holds that
+\begin{itemize}
+    \item every edge $(x,y) = e\in E' w_G(x)=w_{G'}(x), w_G(y)=w_{G'}(y)$, by the correctness of the original algorithm on $G$, it produces valid VC, thus either $x$ or $y$ satisfies $w_G=0$, hence $w_{G'} = 0$, meaning the edge is covered. 
+    \item $e= (t,v)$: (w.l.o.g $v \in S$), it holds  $w_{G'}(v)=w_G(v) + Z_e$, after the steps of the original algorithm on $G'$, $v$ compute local-ratio steps on its neighbours (line 12), thus either $w_{G'}(v)=0$ or $w_{G'}(t) = 0$, hence the edge is covered.
+    \item $e = (t,u)$:
+        \begin{itemize}
+            \item $u \in S$: same procedure is applied as $v$, hence $e$ is covered
+            \item $u \notin S$: following the correctness of the original $\mathcal{A}$ on $G$, all of $u$'s neighbours have been added to $S$ (otherwise, it was not valid cover), hence because in $G'$, we only increased the weight of $u$, and because we preform same operations as in $\mathcal{A}$, all of $u$'s neighbours are also in the cover. (before step 20)
+        \end{itemize}
+\end{itemize}
+To conclude every edge is covered by $\mathcal{A'}$.
+
+\begin{theorem}
+The algorithm produces valid 2-approximation VC of $G'$
+\end{theorem}
+\begin{itemize}
+    \item \underline{$e=(u,v)$ was not selected by the original 2-approximation algorithm on $G$}: then the resulting VC is an optimal VC of $G'$, since we could have removed $e$ from $G$ and getting same local-ration steps, hence the correctness is achieved by the local-ratio 2 algorithm, and our algorithm, stops at line 2.
+    \item \underline{$e=(u,v)$ was selected}: according to lemma \ref{lemma_2} and \ref{lemma_5}, every vertex $x \ne u,v$ holds $w_{G}(x)=w_{G'}(x)$ and $y \in \{u,v\}$ holds $w_{G'}(y)=w_G(y)+Z_e$
+    \begin{itemize}
+        \item if $v \in S, u\notin S$ then after simulating local-ration step on $v$'s neighbours and updates $U$ accordingly (line 12). then by the correctness of the algorithm on $G$ (lemma \ref{A_TAG_VALID_VC}) , because $u \notin S$, then all of its remaining edges are covered by its neighbours. In addition by lemma \ref{lemma_3} and \ref{A_TAG_AS_WHILE_LOCAL_RATIO} the operation is valid local-ratio step, hence in every iteration $U$ is at most twice as the optimal solution.
+        \item otherwise $u \in S$ (reminder: we assumed $v \in S$ in the first place), and preforms local ratio steps on its neighbours as well (line 20), and updating $U$ accordingly. Hence by lemma \ref{A_TAG_VALID_VC}, and because the operation is valid local-ration step, $U$ is a 2-approximation VC of $G'$.
+    \end{itemize}
+\end{itemize}
+
+
+\subsubsection*{Complexity}
+Every step of the algorithm is either local computations or requires $O(1)$ rounds. (The steps which involves sending messages to its neighbours, is preformed in parallel, as there is a single message which is being sent on every edge). Thus the algorithm takes \underline{$O(1)$ iterations}.
+
+\end{document}

@@ -38,7 +38,7 @@ $\phi(v)$: The maximal vertex index belongs to $P_i$, which $v$ encounter in the
 
 $N_i(v)$: All of $v$ neighbours in $P_i$
 
-$\lambda(v)$: True iff $v$ belongs to part $P_i$ with strictly more than $\sqrt{n}$ vertices.
+$\lambda(v)$: True/False - indicates whether vertex $v$ is aware of being belong to "big" part (meaning, part with more than $\sqrt{n}$ vertices)
 
 $t-$neighborhood of $v$: are all the vertices with distance at most $t$ from $v$ in the part $v$ belongs to.
 
@@ -59,13 +59,14 @@ $t-$neighborhood of $v$: are all the vertices with distance at most $t$ from $v$
 
 \If{last iteration \& $\phi(v)$ have been updated}
     \State $\lambda(v) \leftarrow $ True
-    \State $v$ sends $i$ (the part index) to $r$ by the BFS tree.
+    \State $v$ sends $i$ (the part index) to $r$ via the BFS tree.
 \EndIf
 \EndFor
 
 
 \If{$v$ receives an index of a certain part}
-    \State send it to $r$ (by sending it to its parent in the BFS tree) ($v$ can locally remember which indices it has already sent to the root, and do not send each index twice to root).
+    \State sort all indices for propagating, and send one after the other to $r$ (by sending it to its parent in the BFS tree) ($v$ can locally remember which indices it has already sent to the root, and do not send each index twice to root).
+    % \State send it to $r$ (by sending it to its parent in the BFS tree) ($v$ can locally remember which indices it has already sent to the root, and do not send each index twice to root).
 \EndIf 
 
 \If{$v == r $}
@@ -96,16 +97,16 @@ proof by induction:
 
 \textbf{Induction hypothesis}: After $t=k$ rounds $\phi(v)$ is the maximal vertices' ID in its $k-$neighborhood.
 
-\textbf{Induction step}: According to the induction hypothesis, after $k$ rounds all $u \in N_i(v)$ holds: $\phi(u)$ is the maximal ID assignment in their $k$-neighborhood. Because $v$'s $k+1$ neighborhood, consists of all $N_i(v)$'s $k+1$ neighborhood, it holds that after additional rounds $\phi(v)$ is the maximal ID ass. in $v$'s k+1 neighborhood.
+\textbf{Induction step}: According to the induction hypothesis, after $k$ rounds all $u \in N_i(v)$ holds: $\phi(u)$ is the maximal ID assignment in their $k$-neighborhood. Because $v$'s $k+1$ neighborhood, consists of all $N_i(v)$'s $k+1$ neighborhood, it holds that after additional rounds $\phi(v)$ is the maximal ID assignment in $v$'s k+1 neighborhood.
 
 \begin{lemma}
 \label{discovery_large_diameter_parts}
 After $\sqrt{n} + 1$ iterations, in each Part which has a diameter $\omega(\sqrt{n})$, there is a vertex with $\lambda(v) == True$
 \end{lemma}
-Let $P_i$ be a part with diameter greater than $O(\sqrt{n})$ (meaning, with diameter of at least $\omega(\sqrt{n})$. Assume by contradiction at none of $P_i$'s vertices has modified its $\phi(v)$ value in the last iteration (i.e $\lambda(v) == True$). Let $s,t \in P_i$ with shortest path equals the diameter, and let $x \in P_i$ be the vertex with maximal assg. in $P_i$. divide into cases:
+Let $P_i$ be a part with diameter greater than $O(\sqrt{n})$ (meaning, with diameter of at least $\omega(\sqrt{n})$). Assume by contradiction that none of $P_i$'s vertices has modified its $\phi(v)$ value in the last iteration (i.e $\lambda(v) == \text{False}$). Let $s,t \in P_i$ be two vertices which their shortest path length equals the diameter, and let $x \in P_i$ be the vertex with maximal assignment in $P_i$. divide into cases:
 \begin{itemize}
     \item $x$ in $\sqrt{n}-$neighborhood of both $t,s$ : then, there is a path $x - \cdots s$ and $x - \cdots - t$, of distance at most $\sqrt{n}$ each. Meaning, there is a path of distance at most $2 \cdot \sqrt{n}$ between $s$ and $t$. contradiction to assumption that the diameter is at least $\omega(n)$.
-    \item w.l.o.g $x$ in not int $\sqrt{n}-$neighborhood of t. Let $u$ be a vertex with distance of $\sqrt{n} +1 $ from $x$. (such vertex exists, because $t$ is at distance of least $\sqrt{n} +1 $, and it is known that each sub-path $(x,u)$ of shortest path between $(x,t)$ is also a shortest path between $(x,u)$). then because $x$ has the maximal assig in $P_i$, then in iteration $\sqrt{n} +1 $ $u$ will update its $\phi(u)$ value. contradiction.
+    \item w.l.o.g $x$ is not in $\sqrt{n}-$neighborhood of t. Let $u$ be a vertex with distance of $\sqrt{n} +1 $ from $x$. (such vertex exists, because $t$ is at distance of at least $\sqrt{n} +1 $, and it is known that each sub-path $(x,u)$ of shortest path between $(x,t)$ is also a shortest path between $(x,u)$). then because $x$ has the maximal assignment in $P_i$, then in iteration $\sqrt{n} +1$, $u$ will update its $\phi(u)$ value. contradiction.
 \end{itemize}
 
 \begin{lemma}
@@ -183,12 +184,29 @@ after the for loop ends, each vertex knows that the root will send it at most $\
 \end{lemma}
 (Pipelining, was proven in previous exercise, Question 2, sub-question 1).
 
-\begin{lemma}
-\label{vertex_sends_root}
- It takes $D + \sqrt{n}$ iterations for each $v \text{ with } \lambda(v) == True$ to send its $P_i$'s $i$ index to $r$
-\end{lemma}
-There are at most $\sqrt{n}$ unique indices (messages) which are sent by the vertices to $r$, because, each message do not send to the root the same message twice, each node, will send to its BFS parent,at most $\sqrt{n}$ different messages. Hence the total number of unique messages is $\sqrt{n}$, According to previous exercise, Question 2, sub-question 2 (which is harder task, than what we need, which is to only send the messages to $r$), it takes $D + \sqrt{n}$ iterations for $r$ to be notified about all the messages.
 
+% \begin{lemma}
+%  It takes $D + \sqrt{n}$ iterations for each $v \text{ with } \lambda(v) == True$ to send its $P_i$'s $i$ index to $r$
+% \end{lemma}
+% According to Lemma \ref{parts_bound_amount}, there are at most $\sqrt{n}$ unique parts' indices which will be sent to $r$, and according to the algorithm, each node does not sends the same message twice (i.e send only message which it has not seen before), As a results, each vertex sends at most $\sqrt{n}$ messages to $r$. We will prove by induction, that it takes $i + \sqrt{n}$ rounds for vertex at distance $i$ from $v$ to sends it part's index to $r$
+
+% textbf{Base}: for $i=1$, $v$ is a neighbour of $r$, hence it takes him $\sqrt{n}$ rounds to sends at most $\sqrt{n}$ unique messages. (one message per round). (in the worst case, his part index will be sent last).
+
+% \textbf{Induction hypothesis}: assume correctness for $i$, proof for $i+1$
+
+% \textbf{Induction step}: According to the induction hypothesis, it takes $i + \sqrt{n}$ rounds for each vertex at distance $i$ from $r$ to sends its part's index to the root. as we have shown in the base case, it takes $\sqrt{n}$ rounds to send all the unique messages to the parent in the 
+
+\begin{lemma}
+ It takes $D + \sqrt{n}$ iterations for $r$ to receive all the indices of big parts.
+\end{lemma}
+In previous HW (question 2, sub-question 2), we have shown that if each vertex has $k_v$ messages, then it takes $O(D+\sum{k_v})$ rounds for the root to know all the k pieces of information.
+According to Lemma \ref{parts_bound_amount}, there are at most $\sqrt{n}$ parts which we will denote as "big" parts, in which we want to send their index to the root. Hence each vertex can send at most $\sqrt{n}$ unique messages (meaning, it is impossible for two nodes, to send different $\sqrt{n}$ messages). We will show by induction that sending $k$ unique messages from $v$ (which is at distance $i$) to $r$ takes $i + k$ rounds.
+
+\textbf{Base}: for $i=1$, $v$ is a neighbour of $r$, hence it takes him $k$ rounds to send $k$ unique messages. (one message per round). (in the worst case, his part index will be sent last).
+
+\textbf{Induction hypothesis}: assume correctness for $i$, proof for $i+1$
+
+\textbf{Induction step}: According to the induction hypothesis, it takes $i + k$ rounds for each vertex at distance $i$ from $r$ to sends its part's index to the root. hence, after the first message arrives to $v$'s parent in the BFS. (and according to the pipeline principle prooved in precious exercise Q2.1) it takes $i + k$ rounds for all the message to arrive to $r$ from $v$'s parent. hence it takes $i+ 1 + k$ rounds for $v$ to send all messages to the root.
 
 \subsubsection*{computations}
 
@@ -276,7 +294,7 @@ First, we will present few notations which will be useful. \\
 Denote $N_{\phi(v)}(v)= \left\{ u \mid u \in N(v) \land \phi(v) = \phi(u) \right\}$. \\
 Denote $A = \{ u \in N_{\phi(v)}(v) \mid \text{u has choose } \psi_1 \}$, let $k_1 = |A|$ \\
 Denote $B = \{ u \in N_{\phi(v)}(v) \mid \text{u has choose } \psi_2 \}$, let $k_2 = |B|$ \\
-Denote $C = $\overline{A \cup B}$ (Note $0 \le |C| \le t$), let $k_3 = |C| $
+Denote $C = \overline{A \cup B}$ (Note $0 \le |C| \le t$), let $k_3 = |C| $
 
 According to the inclusion-exclusion principle, the number of vertices of $N_{\phi(v)}(v)$ which have not choose either $\psi_1$ or $\psi_2$ is $k_3 = t - |A \cup B| = t - |A| - |B| + |A \cap B| = t - (k_1 + k_2) + |A \cap B|$.
 Hence, According to the algorithm and the pigeon hole theorem
